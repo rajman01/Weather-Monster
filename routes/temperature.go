@@ -46,7 +46,6 @@ func CreateTemperature(c *gin.Context) {
 			"timestamp": fmt.Sprint(temperature.Timestamp),
 		}
 		jsonValue, _ := json.Marshal(jsonData)
-		fmt.Println(jsonValue)
 		response, err2 := http.Post(e.Callback_URL, "application/json", bytes.NewBuffer(jsonValue))
 		if err2 != nil {
 			fmt.Printf("This Http request failed with error%s\n", err2)
