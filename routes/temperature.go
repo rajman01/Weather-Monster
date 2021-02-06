@@ -1,7 +1,10 @@
 package routes
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 	m "weather_monster/models"
@@ -29,11 +32,28 @@ func CreateTemperature(c *gin.Context) {
 		return
 	}
 
-	err = temperature.AddTemperature(&conn)
-	if err != nil {
-		fmt.Println("Error in .AddTemperature()")
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	webhooks, erroo := temperature.AddTemperature(&conn)
+	if erroo != nil {
+		fmt.Println("Error in temperature.AddTemperature()")
+		c.JSON(http.StatusBadRequest, gin.H{"error": erroo.Error()})
 		return
+	}
+	for _, e := range webhooks {
+		jsonData := map[string]string{
+			"city_id":   fmt.Sprint(temperature.City_ID),
+			"min":       fmt.Sprint(temperature.Min),
+			"max":       fmt.Sprint(temperature.Max),
+			"timestamp": fmt.Sprint(temperature.Timestamp),
+		}
+		jsonValue, _ := json.Marshal(jsonData)
+		fmt.Println(jsonValue)
+		response, err2 := http.Post(e.Callback_URL, "application/json", bytes.NewBuffer(jsonValue))
+		if err2 != nil {
+			fmt.Printf("This Http request failed with error%s\n", err2)
+		} else {
+			data, _ := ioutil.ReadAll(response.Body)
+			fmt.Println(string(data))
+		}
 	}
 	c.JSON(http.StatusOK, temperature)
 }
@@ -53,11 +73,12 @@ func ForcastRoute(c *gin.Context) {
 	forcast.City_ID = cityID
 
 	temperatures, err := forcast.GetForcast(&conn)
+	fmt.Println(temperatures)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	var max float64
 	var min float64
 	for _, e := range temperatures {
@@ -65,9 +86,13 @@ func ForcastRoute(c *gin.Context) {
 		min += float64(e.Min)
 	}
 	fmt.Println(max, min, len(temperatures))
-	
-	forcast.Max = float64(max) / float64(len(temperatures))
-	forcast.Min = float64(min) / float64(len(temperatures))
+	if len(temperatures) != 0 {
+		forcast.Max = float64(max) / float64(len(temperatures))
+		forcast.Min = float64(min) / float64(len(temperatures))
+	} else {
+		forcast.Max = float64(0)
+		forcast.Min = float64(0)
+	}
 	forcast.Sample = len(temperatures)
 
 	c.JSON(http.StatusOK, forcast)

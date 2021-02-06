@@ -21,7 +21,7 @@ func main() {
 	{
 		citiesGroup.POST("", r.CreateCity)
 		citiesGroup.PATCH("/:Id", r.CityUpdate)
-		citiesGroup.DELETE(("/:Id"), r.CityDelete)
+		citiesGroup.DELETE("/:Id", r.CityDelete)
 	}
 
 	tempraturesGroup := router.Group("temperatures")
