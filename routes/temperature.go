@@ -38,14 +38,15 @@ func CreateTemperature(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": erroo.Error()})
 		return
 	}
-	for _, e := range webhooks {
-		jsonData := map[string]string{
+
+        jsonData := map[string]string{
 			"city_id":   fmt.Sprint(temperature.City_ID),
 			"min":       fmt.Sprint(temperature.Min),
 			"max":       fmt.Sprint(temperature.Max),
 			"timestamp": fmt.Sprint(temperature.Timestamp),
 		}
-		jsonValue, _ := json.Marshal(jsonData)
+	jsonValue, _ := json.Marshal(jsonData)
+	for _, e := range webhooks {
 		response, err2 := http.Post(e.Callback_URL, "application/json", bytes.NewBuffer(jsonValue))
 		if err2 != nil {
 			fmt.Printf("This Http request failed with error%s\n", err2)
